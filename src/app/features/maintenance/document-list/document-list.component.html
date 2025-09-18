@@ -1,0 +1,138 @@
+<!-- Loading Overlay -->
+<app-loading [isLoading]="loading" [message]="'Cargando ' + (showDocumentView ? 'documentos...' : showMonthView ? 'meses...' : 'años...')"></app-loading>
+
+<div class="p-4 flex flex-col min-h-screen" [class.opacity-0]="loading" [class.pointer-events-none]="loading">
+    <p-card class="flex-1 flex flex-col">
+        <ng-template pTemplate="header">
+            <div class="flex items-center">
+                <p-button *ngIf="showYearView" icon="pi pi-arrow-left" (click)="home()" styleClass="p-button-danger p-button-rounded p-button-text mr-2"> </p-button>
+                <!-- Flecha normal en meses o documentos -->
+                <p-button *ngIf="!showYearView" icon="pi pi-arrow-left" (click)="showMonthView ? goBackToYears() : goBackToMonths()" styleClass="p-button-danger p-button-rounded p-button-text mr-2"> </p-button>
+                <span class="text-lg font-semibold">
+                    {{ showYearView ? 'Seleccione un año' : showMonthView ? 'Seleccione un mes del año' : 'Listado de Documentos' }}
+                    <span *ngIf="selectedYear" class="ml-2 text-primary-500">
+                        {{ selectedYear }}
+                        <span *ngIf="selectedMonth"> - {{ months[selectedMonth - 1].name }}</span>
+                    </span>
+                </span>
+            </div>
+        </ng-template>
+
+        <!-- Vista de Años -->
+        <div *ngIf="showYearView" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4 justify-center">
+            <div *ngFor="let year of years" class="p-6 border rounded shadow hover:shadow-md cursor-pointer transition-transform transform hover:-translate-y-1 bg-white flex flex-col items-center" (click)="selectYear(year)">
+                <i class="pi pi-folder text-5xl text-primary-500 mb-3"></i>
+                <span class="font-semibold text-lg">{{ year }}</span>
+            </div>
+        </div>
+
+        <!-- Vista de Meses -->
+        <div *ngIf="showMonthView" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 p-6">
+            <div
+                *ngFor="let month of getMonthsForSelectedYear()"
+                class="p-6 rounded-lg border border-gray-300 bg-white hover:border-primary-500 cursor-pointer shadow-md hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col items-center text-center"
+                (click)="selectMonth(month.id)"
+            >
+                <i class="pi pi-folder text-5xl text-red-500 mb-4"></i>
+                <span class="font-semibold text-lg">{{ month.name }}</span>
+            </div>
+        </div>
+
+        <!-- Vista de Documentos -->
+        <div *ngIf="showDocumentView" class="flex-1 flex flex-col">
+            <!-- Header with Export Button -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Documentos</h2>
+                <button pButton type="button" icon="pi pi-file-excel" label="Exportar a Excel" class="p-button-success" (click)="exportToExcel()"></button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-6">
+                <!-- Usuario -->
+                <div class="flex flex-col">
+                    <label for="usuario" class="block text-800 text-sm font-medium mb-2"> Buscar por usuario o DNI </label>
+                    <span class="p-input-icon-left w-full">
+                        <input id="usuario" type="text" pInputText [(ngModel)]="filtroUsuario" (input)="aplicarFiltros()" placeholder="Buscar..." class="w-full" />
+                    </span>
+                </div>
+
+                <!-- Estado -->
+                <div class="flex flex-col">
+                    <label for="estado" class="block text-600 text-sm font-medium mb-2"> Estado del documento </label>
+                    <p-select id="estado" [options]="estados" [(ngModel)]="filtroEstado" (onChange)="aplicarFiltros()" [showClear]="true" placeholder="Seleccionar estado" optionLabel="nombre" optionValue="valor" class="w-full"> </p-select>
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div class="flex items-end">
+                    <button pButton type="button" icon="pi pi-filter-slash" label="Limpiar filtros" class="p-button-outlined p-button-danger w-full" (click)="limpiarFiltros()"></button>
+                </div>
+            </div>
+
+            <!-- Tabla de Documentos -->
+            <div class="flex-1">
+                <p-table
+                    [value]="documentosFiltrados"
+                    [paginator]="true"
+                    [rows]="12"
+                    [showCurrentPageReport]="true"
+                    [rowsPerPageOptions]="[10, 25, 50]"
+                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} documentos"
+                    [scrollable]="true"
+                    scrollHeight="flex"
+                    styleClass="p-datatable-striped p-datatable-gridlines"
+                >
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Usuario</th>
+                            <th>DNI</th>
+                            <th>Documento</th>
+                            <th>Subido el</th>
+                            <th>Firmado el</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="body" let-documento>
+                        <tr>
+                            <td>{{ documento.nombre_usuario }}</td>
+                            <td>{{ documento.usuario_dni }}</td>
+                            <td>{{ documento.nombre_archivo || documento.nombre }}</td>
+                            <td>{{ documento.fecha_creacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                            <td>{{ documento.firmado_en ? (documento.firmado_en | date: 'dd/MM/yyyy HH:mm') : 'No firmado' }}</td>
+                            <td>
+                                <p-tag [value]="documento.estado | titlecase" [severity]="getSeverity(documento.estado)" styleClass="p-tag-rounded"> </p-tag>
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button pButton pRipple type="button" icon="pi pi-download" class="p-button-rounded p-button-text" (click)="descargarDocumento(documento)" pTooltip="Descargar documento" tooltipPosition="top"></button>
+                                    <button
+                                        pButton
+                                        pRipple
+                                        type="button"
+                                        icon="pi pi-trash"
+                                        class="p-button-rounded p-button-text p-button-danger"
+                                        (click)="confirmarEliminacion(documento)"
+                                        pTooltip="Eliminar documento"
+                                        tooltipPosition="top"
+                                    ></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="7" class="text-center p-4">
+                                <p class="text-gray-500">
+                                    <i class="pi pi-info-circle mr-2"></i>
+                                    No se encontraron documentos para el período seleccionado.
+                                </p>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        </div>
+    </p-card>
+</div>

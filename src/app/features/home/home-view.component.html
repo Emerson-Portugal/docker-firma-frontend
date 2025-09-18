@@ -1,0 +1,15 @@
+<div class="flex items-center justify-center w-full min-h-[calc(80vh-8rem)]">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 place-items-center">
+        <!-- Solo RRHH -->
+        <app-custom-card *ngIf="userRole === 'rrhh'" imageUrl="assets/img/menu/crm.webp" content="Subir Boletas" (click)="navigateTo('upload-ballots/dashboard')" />
+
+        <app-custom-card *ngIf="userRole === 'rrhh'" imageUrl="assets/img/menu/remuneracion.webp" content="Listado de Boletas" (click)="navigateTo('document-list')" />
+
+        <!-- Solo EMPLEADO -->
+        <app-custom-card *ngIf="userRole === 'empleado'" imageUrl="assets/img/menu/factura.webp" content="Firmar Boletas" (click)="navigateTo('sign-ballots/dashboard')" />
+
+        <!-- Solo SOPORTE -->
+        <app-custom-card *ngIf="userRole === 'soporte'" imageUrl="assets/img/menu/crm.webp" content="Crear Usuario" (click)="navigateTo('users/create')" />
+        <app-custom-card *ngIf="userRole === 'soporte'" imageUrl="assets/img/menu/users.webp" content="Lista de Usuarios" (click)="navigateTo('users/list')" />
+    </div>
+</div>

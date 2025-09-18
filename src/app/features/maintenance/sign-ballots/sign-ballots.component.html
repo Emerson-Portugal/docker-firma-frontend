@@ -1,0 +1,54 @@
+<div class="flex flex-col">
+   <!-- Loading Overlay -->
+    <app-loading [isLoading]="loading" message="Cargando documentos..."></app-loading>
+
+    <p-card class="my-3">
+        <!-- Cabecera con flecha y título -->
+        <ng-template pTemplate="header">
+            <div class="flex items-center">
+                <p-button icon="pi pi-arrow-left" (click)="home()"
+                    styleClass="p-button-danger p-button-rounded p-button-text mr-2">
+                </p-button>
+                <span class="text-lg font-semibold">Firmar Boletas</span>
+            </div>
+        </ng-template>
+
+        <div class="flex">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">Estado:</span>
+                <p-tag *ngIf="documento?.estado" [value]="documento?.estado || '' | titlecase"
+                    [severity]="getSeverity(documento?.estado)"> </p-tag>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-3 absolute right-5 top-18 md:relative md:top-0 md:right-0 md:flex-row">
+
+            <button *ngIf="documento?.estado !== 'firmado'" pButton label="Firmar PDF" icon="pi pi-pencil"
+                [severity]="'danger'" [raised]="true" size="small" (click)="firmarDocumento()"
+                styleClass="whitespace-nowrap px-4 h-9 rounded-md"></button>
+        </div>
+    </p-card>
+
+    <p-card [header]="documento?.nombre_archivo || 'Previsualización'" class="my-3">
+        <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="mb-3"></p-progressBar>
+
+        <ng-container *ngIf="!loading && pdfUrlSafe; else emptyState">
+            <div class="w-full flex justify-center">
+                <div class="w-full max-w-screen-lg">
+                    <!-- Visor PDF con fallback -->
+                    <object [data]="pdfUrlSafe" type="application/pdf" class="w-full h-[65vh]">
+                        <!-- Fallback si el navegador no embebe PDF -->
+                        <div class="p-4 text-sm text-surface-500 flex flex-col gap-3 items-start">
+                            <span>Tu navegador no puede mostrar el PDF embebido.</span>
+                        </div>
+                    </object>
+                </div>
+            </div>
+        </ng-container>
+
+        <ng-template #emptyState>
+            <div class="text-surface-500 text-sm">No hay PDF para mostrar.</div>
+        </ng-template>
+    </p-card>
+
+</div>

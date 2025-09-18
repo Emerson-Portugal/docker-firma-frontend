@@ -1,0 +1,60 @@
+<div class="p-4">
+    <p-toast></p-toast>
+
+    <p-card header="Crear Nuevo Usuario" class="max-w-3xl mx-auto shadow-lg rounded-2xl">
+        <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="grid gap-6">
+            <!-- DNI -->
+            <div class="flex flex-col">
+                <label for="dni" class="mb-2 font-semibold text-gray-700">DNI</label>
+                <input id="dni" type="text" pInputText formControlName="dni" class="w-full" [ngClass]="{ 'p-invalid': userForm.get('dni')?.invalid && userForm.get('dni')?.touched }" placeholder="Ingrese el DNI" />
+                <small *ngIf="userForm.get('dni')?.invalid && userForm.get('dni')?.touched" class="p-error mt-1">
+                    {{ userForm.get('dni')?.errors?.['required'] ? 'El DNI es requerido' : 'Formato de DNI inválido (8-12 dígitos)' }}
+                </small>
+            </div>
+
+            <!-- Nombre -->
+            <div class="flex flex-col">
+                <label for="nombre" class="mb-2 font-semibold text-gray-700">Nombre Completo</label>
+                <input id="nombre" type="text" pInputText formControlName="nombre" class="w-full" [ngClass]="{ 'p-invalid': userForm.get('nombre')?.invalid && userForm.get('nombre')?.touched }" placeholder="Ingrese el nombre completo" />
+                <small *ngIf="userForm.get('nombre')?.invalid && userForm.get('nombre')?.touched" class="p-error mt-1"> El nombre es requerido </small>
+            </div>
+
+            <!-- Email -->
+            <div class="flex flex-col">
+                <label for="email" class="mb-2 font-semibold text-gray-700">Correo Electrónico</label>
+                <input id="email" type="email" pInputText formControlName="email" class="w-full" [ngClass]="{ 'p-invalid': userForm.get('email')?.invalid && userForm.get('email')?.touched }" placeholder="ejemplo@dominio.com" />
+                <small *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched" class="p-error mt-1">
+                    {{ userForm.get('email')?.errors?.['required'] ? 'El correo es requerido' : 'Formato de correo inválido' }}
+                </small>
+            </div>
+
+            <!-- Rol -->
+            <div class="flex flex-col">
+                <label for="rol" class="mb-2 font-semibold text-gray-700">Rol</label>
+                <p-select id="rol" [options]="roles" formControlName="rol" optionLabel="label" optionValue="value" placeholder="Seleccione un rol" class="w-full"></p-select>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="flex flex-col">
+                <label for="password" class="mb-2 font-semibold text-gray-700">Contraseña</label>
+                <input id="password" type="password" pInputText formControlName="password" class="w-full" [ngClass]="{ 'p-invalid': userForm.get('password')?.invalid && userForm.get('password')?.touched }" placeholder="Mínimo 6 caracteres" />
+                <small *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched" class="p-error mt-1">
+                    {{ userForm.get('password')?.errors?.['required'] ? 'La contraseña es requerida' : 'Debe tener al menos 6 caracteres' }}
+                </small>
+            </div>
+
+            <!-- Activo -->
+            <div class="flex items-center space-x-2">
+                <p-checkbox id="activo" formControlName="activo" [binary]="true" inputId="activo"></p-checkbox>
+                <label for="activo" class="text-gray-700">Usuario Activo</label>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-wrap justify-end gap-3 mt-6">
+                <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="onCancel()" [disabled]="loading"></button>
+
+                <button pButton type="submit" label="Crear" class="p-button-primary" [disabled]="userForm.invalid || loading" [loading]="loading"></button>
+            </div>
+        </form>
+    </p-card>
+</div>

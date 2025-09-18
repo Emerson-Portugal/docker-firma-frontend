@@ -1,0 +1,201 @@
+<div class="p-4">
+    <!-- Toast para mensajes -->
+    <p-toast></p-toast>
+
+    <p-card [style]="{ 'margin-bottom': '2em' }">
+        <ng-template pTemplate="header">
+            <div class="flex items-center">
+                <p-button icon="pi pi-arrow-left" (click)="home()" styleClass="p-button-danger p-button-rounded p-button-text mr-0"> </p-button>
+                <span class="text-lg font-semibold">Carga de Boletas de Pago</span>
+            </div>
+        </ng-template>
+
+        <!-- Sección de carga de archivos -->
+        <div class="mb-4 flex flex-col items-center justify-center text-center">
+            <label class="block text-900 font-medium mb-2"> Seleccionar archivos PDF de boletas </label>
+            <div class="flex items-center justify-center">
+                <input type="file" id="fileInput" class="hidden" multiple accept=".pdf" (change)="onFileSelected($event)" [disabled]="isUploading" #fileInput />
+                <p-button label="Seleccionar archivos" icon="pi pi-upload" (click)="fileInput.click()" [disabled]="isUploading" styleClass="p-button-outlined"> </p-button>
+                <span class="ml-3 text-600"> {{ selectedFiles.length }} archivo(s) seleccionado(s) </span>
+            </div>
+        </div>
+
+        <!-- Lista de archivos seleccionados -->
+        <div class="mb-4" *ngIf="selectedFiles.length > 0">
+            <h4 class="text-900 font-medium">Archivos seleccionados:</h4>
+            <p-table
+                [value]="selectedFiles"
+                [scrollable]="true"
+                scrollHeight="200px"
+                [rows]="5"
+                [paginator]="true"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                [rowsPerPageOptions]="[5, 10, 25, 50]"
+                [tableStyle]="{ 'min-width': '50rem' }"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Nombre del archivo</th>
+                        <th>Tamaño</th>
+                        <th>Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-file let-i="rowIndex">
+                    <tr>
+                        <td>{{ file.name }}</td>
+                        <td>{{ file.size | number }} bytes</td>
+                        <td>
+                            <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="removeFile(i)" [disabled]="isUploading"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+
+        <!-- Barra de progreso -->
+        <div class="mb-4" *ngIf="isUploading">
+            <p-progressBar [value]="uploadProgress" [showValue]="true" styleClass="h-4"></p-progressBar>
+            <div class="text-right text-sm text-gray-600 mt-1">{{ uploadProgress }}% completado</div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex justify-end w-full gap-2">
+            <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-danger p-button-text" (click)="resetForm()" [disabled]="isUploading || selectedFiles.length === 0"></button>
+            <button
+                pButton
+                type="button"
+                [label]="isUploading ? 'Subiendo...' : 'Subir boletas'"
+                icon="pi pi-upload"
+                class="p-button-success"
+                (click)="uploadFiles()"
+                [disabled]="isUploading || selectedFiles.length === 0"
+                [loading]="isUploading"
+            ></button>
+        </div>
+    </p-card>
+
+    <!-- Resultados de la carga -->
+    <p-card header="Resultados" [style]="{ 'margin-top': '2em' }" *ngIf="uploadResponse">
+        <!-- Mensaje de éxito o error -->
+        <div
+            class="mb-4 p-3 border-round border-1 align-middle"
+            [ngClass]="{
+                'border-green-500 bg-green-50': uploadResponse.archivos_con_error === 0,
+                'border-yellow-500 bg-yellow-50': uploadResponse.archivos_con_error > 0 && uploadResponse.archivos_exitosos > 0,
+                'border-red-500 bg-red-50': uploadResponse.archivos_exitosos === 0 && uploadResponse.archivos_con_error > 0
+            }"
+        >
+            <div class="flex align-items-center">
+                <i class="text-2xl mr-1 align-middle text-green-500" *ngIf="uploadResponse.archivos_con_error === 0">
+                    <!-- Check Circle -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 
+                               0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                </i>
+
+                <i class="text-2xl mr-1 align-middle text-yellow-500" *ngIf="uploadResponse.archivos_con_error > 0 && uploadResponse.archivos_exitosos > 0">
+                    <!-- Exclamation Triangle -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 9v2m0 4h.01M5.07 
+                               19h13.86c1.54 0 2.5-1.67 
+                               1.73-3L13.73 4a2 2 0 
+                               00-3.46 0L3.34 16c-.77 
+                               1.33.19 3 1.73 3z"
+                        />
+                    </svg>
+                </i>
+
+                <i class="text-2xl mr-1 align-middle text-red-500" *ngIf="uploadResponse.archivos_exitosos === 0 && uploadResponse.archivos_con_error > 0">
+                    <!-- Times Circle -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </i>
+                <div>
+                    <p
+                        class="m-0 font-medium align-middle"
+                        [ngClass]="{
+                            'text-green-800': uploadResponse.archivos_con_error === 0,
+                            'text-yellow-800': uploadResponse.archivos_con_error > 0 && uploadResponse.archivos_exitosos > 0,
+                            'text-red-800': uploadResponse.archivos_exitosos === 0 && uploadResponse.archivos_con_error > 0
+                        }"
+                        [innerHTML]="getUploadResultMessage()"
+                    ></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Errores -->
+        <div *ngIf="uploadResponse.errores && uploadResponse.errores.length > 0" class="mb-4">
+            <h4 class="text-900 font-medium mb-2">Errores encontrados:</h4>
+            <p-table
+                [value]="uploadResponse.errores"
+                [scrollable]="true"
+                scrollHeight="200px"
+                [rows]="5"
+                [paginator]="true"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                [rowsPerPageOptions]="[5, 10, 25, 50]"
+                [tableStyle]="{ 'min-width': '100%' }"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Archivo</th>
+                        <th>DNI</th>
+                        <th>Error</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-error>
+                    <tr>
+                        <td>{{ error.archivo }}</td>
+                        <td>{{ error.dni }}</td>
+                        <td class="text-red-600">{{ error.error }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+
+        <!-- Resultados exitosos -->
+        <div *ngIf="uploadResponse.resultados && uploadResponse.resultados.length > 0">
+            <h4 class="text-900 font-medium mb-2">Archivos subidos correctamente:</h4>
+            <p-table
+                [value]="uploadResponse.resultados"
+                [scrollable]="true"
+                scrollHeight="200px"
+                [rows]="5"
+                [paginator]="true"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+                [rowsPerPageOptions]="[5, 10, 25, 50]"
+                [tableStyle]="{ 'min-width': '100%' }"
+            >
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Archivo</th>
+                        <th>DNI</th>
+                        <th>Estado</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-resultado>
+                    <tr>
+                        <td>{{ resultado.archivo_original }}</td>
+                        <td>{{ resultado.dni }}</td>
+                        <td>
+                            <p-tag [severity]="resultado.estado === 'subido' ? 'success' : 'warning'" [value]="resultado.estado === 'subido' ? 'Subido' : 'Pendiente'" styleClass="p-tag-rounded"> </p-tag>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-card>
+</div>

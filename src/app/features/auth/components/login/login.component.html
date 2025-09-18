@@ -1,0 +1,51 @@
+<div
+    class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
+    <div class="flex flex-col items-center justify-center">
+        <div
+            style="border-radius:56px; padding:0.3rem; background:linear-gradient(180deg, #ef4444 10%, rgba(239,68,68,0) 30%);">
+
+
+            <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
+                <div class="text-center mb-8">
+                    <img src="assets/img/logo.png" alt="logo" class="block mx-auto h-16 w-auto mb-3" />
+                    <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">
+                        Bienvenido a Rodrig&Mar!
+                    </div>
+                    <span class="text-muted-color font-medium">Inicie sesión para continuar</span>
+                </div>
+
+
+                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="w-full md:w-120">
+                    <div>
+                        <label for="dni"
+                            class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">DNI</label>
+                        <input pInputText id="dni" type="text" placeholder="DNI" inputmode="numeric"
+                            autocomplete="username" class="w-full mb-2" formControlName="dni"
+                            [ngClass]="{ 'p-invalid': isInvalid('dni') }" />
+                        <div *ngIf="isInvalid('dni')" class="text-red-500 text-sm mb-4">
+                            <span *ngIf="loginForm.get('dni')?.errors?.['required']">El DNI es obligatorio.</span>
+                            <span *ngIf="loginForm.get('dni')?.errors?.['pattern']">Debe tener 8 dígitos.</span>
+                        </div>
+
+                        <label for="password"
+                            class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                        <p-password id="password" formControlName="password" placeholder="Contraseña"
+                            [toggleMask]="true" [feedback]="false" [fluid]="true" styleClass="mb-2"
+                            [ngClass]="{ 'p-invalid': isInvalid('password') }"></p-password>
+                        <div *ngIf="isInvalid('password')" class="text-red-500 text-sm mb-4">
+                            <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es
+                                obligatoria.</span>
+                            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Mínimo 6 caracteres.</span>
+                        </div>
+
+                        <p-button type="submit" label="Iniciar Sesión" styleClass="w-full" severity="danger"
+                            [disabled]="loginForm.invalid || loginForm.pending">
+                        </p-button>
+
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>

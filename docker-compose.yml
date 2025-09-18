@@ -1,0 +1,8 @@
+version: '3'
+services:
+  firmas-fronted:
+    build: .
+    container_name: firmas_fronted_container
+    ports:
+      - "8080:80"
+    restart: always
