@@ -1,7 +1,7 @@
 export const environment = {
   PRD: false,
- 
-  BASE_URL: 'http://127.0.0.1:8000/api/v1',
-  BASE_URL_PDF: 'http://localhost:8000'
+
+  BASE_URL: 'http://100.71.234.116:8000/api/v1',
+  BASE_URL_PDF: 'http://100.71.234.116:8000'
 };
 
