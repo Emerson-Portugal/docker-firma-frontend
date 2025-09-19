@@ -38,6 +38,15 @@ interface MisDocumentosResponse {
     templateUrl: './list-ballots-user.component.html'
 })
 export class ListBallotsUserComponent implements OnInit {
+
+
+    years: number[] = [];
+    selectedYear: number | null = null;
+    showYearView = true;
+    showDocumentView = false;
+
+
+
     loading = false;
     error: string | null = null;
 
@@ -86,7 +95,7 @@ export class ListBallotsUserComponent implements OnInit {
         private signSts: StatusBallotsService,
         private router: Router,
         private messageService: MessageService
-    ) {}
+    ) { }
 
     ngOnInit(): void {
         this.cargar();
@@ -98,17 +107,37 @@ export class ListBallotsUserComponent implements OnInit {
         this.listSvc.getMyDocuments().subscribe({
             next: (res: MisDocumentosResponse) => {
                 this.documentos = res.documentos ?? [];
-                this.aplicarFiltros(); // <- aplicar filtro inicial
+
+                // Generar años únicos
+                const años = new Set<number>();
+                this.documentos.forEach(doc => {
+                    if (doc.subido_en) {
+                        const año = new Date(doc.subido_en).getFullYear();
+                        años.add(año);
+                    }
+                });
+
+                // Orden descendente (últimos años primero)
+                this.years = Array.from(años).sort((a, b) => b - a);
+
+                this.aplicarFiltros();
                 this.loading = false;
             },
             error: (err) => {
                 this.error = err?.error?.detail || 'No se pudieron cargar los documentos.';
                 this.documentos = [];
                 this.documentosFiltrados = [];
+                this.years = [];
                 this.loading = false;
             }
         });
     }
+
+
+
+
+
+
 
     limpiarFiltros() {
         this.estadoFiltro = 'all';
@@ -119,10 +148,11 @@ export class ListBallotsUserComponent implements OnInit {
     }
 
     aplicarFiltros() {
-        // Aplicar filtros
         let documentosFiltrados = this.documentos.filter((doc) => {
             // Filtrar por estado
-            const cumpleEstado = this.estadoFiltro === 'all' || (doc.estado || '').toLowerCase() === this.estadoFiltro;
+            const cumpleEstado =
+                this.estadoFiltro === 'all' ||
+                (doc.estado || '').toLowerCase() === this.estadoFiltro;
 
             // Filtrar por mes
             let cumpleMes = true;
@@ -131,7 +161,14 @@ export class ListBallotsUserComponent implements OnInit {
                 cumpleMes = fechaDoc.getMonth() + 1 === this.mesFiltro;
             }
 
-            return cumpleEstado && cumpleMes;
+            // Filtrar por año
+            let cumpleAnio = true;
+            if (this.selectedYear) {
+                const fechaDoc = new Date(doc.subido_en);
+                cumpleAnio = fechaDoc.getFullYear() === this.selectedYear;
+            }
+
+            return cumpleEstado && cumpleMes && cumpleAnio;
         });
 
         // Ordenar según la opción seleccionada
@@ -144,6 +181,7 @@ export class ListBallotsUserComponent implements OnInit {
         this.documentosFiltrados = documentosFiltrados;
     }
 
+
     getSeverity(estado: string): 'success' | 'warning' | 'danger' | 'info' {
         const e = (estado || '').toLowerCase();
         if (e === 'firmado') return 'success';
@@ -152,6 +190,24 @@ export class ListBallotsUserComponent implements OnInit {
     }
 
     trackDoc = (_: number, d: Documento) => d.id;
+
+
+    selectYear(year: number) {
+        this.selectedYear = year;
+        this.showYearView = false;
+        this.showDocumentView = true;
+        this.aplicarFiltros();
+    }
+
+    goBackToYears() {
+        this.selectedYear = null;
+        this.showYearView = true;
+        this.showDocumentView = false;
+        this.aplicarFiltros();
+    }
+
+
+
 
     async descargar(doc: Documento) {
         this.validando[doc.id] = true;
