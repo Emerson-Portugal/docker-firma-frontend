@@ -8,7 +8,7 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ListBallotsService } from '@services/list-ballots/list-ballots.service';
 import { StatusBallotsService } from '@services/status-ballots/status-ballots.service';
 import { LoadingComponent } from '@shared/components/loading/loading.component';
@@ -39,13 +39,10 @@ interface MisDocumentosResponse {
 })
 export class ListBallotsUserComponent implements OnInit {
 
-
     years: number[] = [];
     selectedYear: number | null = null;
     showYearView = true;
     showDocumentView = false;
-
-
 
     loading = false;
     error: string | null = null;
@@ -94,10 +91,28 @@ export class ListBallotsUserComponent implements OnInit {
         private listSvc: ListBallotsService,
         private signSts: StatusBallotsService,
         private router: Router,
+        private route: ActivatedRoute,
         private messageService: MessageService
     ) { }
 
     ngOnInit(): void {
+        // Leer el query param 'year' para mantener el contexto del año seleccionado
+        this.route.queryParams.subscribe((params) => {
+            const yearParam = params['year'];
+            const yearNum = yearParam ? Number(yearParam) : null;
+            if (yearNum && !Number.isNaN(yearNum)) {
+                this.selectedYear = yearNum;
+                this.showYearView = false;
+                this.showDocumentView = true;
+            } else {
+                this.selectedYear = null;
+                this.showYearView = true;
+                this.showDocumentView = false;
+            }
+            // Reaplicar filtros cuando cambia el query param
+            this.aplicarFiltros();
+        });
+
         this.cargar();
     }
 
@@ -132,12 +147,6 @@ export class ListBallotsUserComponent implements OnInit {
             }
         });
     }
-
-
-
-
-
-
 
     limpiarFiltros() {
         this.estadoFiltro = 'all';
@@ -181,7 +190,6 @@ export class ListBallotsUserComponent implements OnInit {
         this.documentosFiltrados = documentosFiltrados;
     }
 
-
     getSeverity(estado: string): 'success' | 'warning' | 'danger' | 'info' {
         const e = (estado || '').toLowerCase();
         if (e === 'firmado') return 'success';
@@ -191,12 +199,17 @@ export class ListBallotsUserComponent implements OnInit {
 
     trackDoc = (_: number, d: Documento) => d.id;
 
-
     selectYear(year: number) {
         this.selectedYear = year;
         this.showYearView = false;
         this.showDocumentView = true;
         this.aplicarFiltros();
+        // Reflejar la selección en la URL para poder restaurarla después
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { year },
+            queryParamsHandling: 'merge'
+        });
     }
 
     goBackToYears() {
@@ -204,10 +217,13 @@ export class ListBallotsUserComponent implements OnInit {
         this.showYearView = true;
         this.showDocumentView = false;
         this.aplicarFiltros();
+        // Quitar el año de la URL
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { year: null },
+            queryParamsHandling: 'merge'
+        });
     }
-
-
-
 
     async descargar(doc: Documento) {
         this.validando[doc.id] = true;
@@ -216,8 +232,11 @@ export class ListBallotsUserComponent implements OnInit {
             const response = await this.signSts.verificarFirma(doc.id).toPromise();
 
             if (response?.puede_firmar) {
-                // Si puede firmar, redirigir a la firma
-                this.router.navigate(['/signature/sign-ballots', doc.id], { state: { doc } });
+                // Si puede firmar, redirigir a la firma preservando el año seleccionado en query params
+                this.router.navigate(['/signature/sign-ballots', doc.id], {
+                    state: { doc },
+                    queryParamsHandling: 'preserve'
+                });
             } else {
                 // Si hay documentos pendientes, mostrar mensaje
                 const docPendiente = response?.documento_pendiente;
@@ -247,7 +266,10 @@ export class ListBallotsUserComponent implements OnInit {
 
     verDocumento(doc: Documento) {
         // Redirigir directamente a la vista del documento sin validación
-        this.router.navigate(['/signature/sign-ballots', doc.id], { state: { doc } });
+        this.router.navigate(['/signature/sign-ballots', doc.id], {
+            state: { doc },
+            queryParamsHandling: 'preserve'
+        });
     }
 
     home() {

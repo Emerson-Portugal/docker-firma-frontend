@@ -90,7 +90,7 @@ export class SignBallotsComponent implements OnInit {
         const id = Number(this.route.snapshot.paramMap.get('id'));
         if (!Number.isFinite(id)) {
             this.msg.add({ severity: 'warn', summary: 'Aviso', detail: 'ID inválido' });
-            this.router.navigate(['/signature/sign-ballots/dashboard']);
+            this.router.navigate(['/signature/sign-ballots/dashboard'], { queryParamsHandling: 'preserve' });
             return;
         }
 
@@ -151,9 +151,13 @@ export class SignBallotsComponent implements OnInit {
         // Evita doble clic si ya está en curso
         if (this.isSigning) return;
 
-        // /signature/sign-ballots/2 -> 2
-        const lastSegment = this.router.url.split('/').filter(Boolean).pop();
-        const documentoId = Number(lastSegment);
+        // Obtener el ID desde los params de ruta (robusto ante query params)
+        let documentoId = Number(this.route.snapshot.paramMap.get('id'));
+        // Fallback por si acaso
+        if (!documentoId || Number.isNaN(documentoId)) {
+            const lastSegment = this.router.url.split('/').filter(Boolean).pop() || '';
+            documentoId = Number((lastSegment.split('?')[0] || '').trim());
+        }
 
         if (!documentoId || Number.isNaN(documentoId)) {
             Swal.fire('Sin ID', 'No se encontró el ID del documento en la URL.', 'error');
@@ -190,7 +194,7 @@ export class SignBallotsComponent implements OnInit {
                     allowOutsideClick: false
                 }).then((result) => {
                     // Redirigir al dashboard después de hacer clic en Aceptar
-                    this.router.navigate(['/signature/sign-ballots/dashboard']);
+                    this.router.navigate(['/signature/sign-ballots/dashboard'], { queryParamsHandling: 'preserve' });
                 });
             },
             error: (err) => {
@@ -208,8 +212,6 @@ export class SignBallotsComponent implements OnInit {
     }
 
     home(): void {
-        this.router.navigate(['/signature/sign-ballots/dashboard']);
+        this.router.navigate(['/signature/sign-ballots/dashboard'], { queryParamsHandling: 'preserve' });
     }
-
-
 }
