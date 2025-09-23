@@ -90,38 +90,38 @@ export class ListBallotsUserComponent implements OnInit {
     // --- Helpers de periodo (mes/año) basado en el nombre del archivo ---
     private extraerPeriodoDeNombre(nombreArchivo?: string | null): { year: number; month: number } | null {
         if (!nombreArchivo) return null;
-        // Considerar meses en español (con y sin acento) y variante Setiembre
-        const meses = [
-            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-            'julio', 'agosto', 'septiembre', 'setiembre', 'octubre', 'noviembre', 'diciembre'
-        ];
-
-        // Quitar acentos para comparar
-        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        const nombre = normalize(nombreArchivo);
-
-        // Buscar nombre de mes y año de 4 dígitos cercanos
-        // Ejemplos válidos: "Boleta_Septiembre_2025.pdf", "septiembre-2025", "2025_septiembre"
-        const mesRegex = new RegExp(`\\b(${meses.map(m => normalize(m)).join('|')})\\b`, 'i');
-        const yearRegex = /(19|20)\d{2}/; // años 1900-2099
-
-        const mesMatch = nombre.match(mesRegex);
-        const yearMatch = nombre.match(yearRegex);
-        if (!mesMatch || !yearMatch) return null;
-
-        let mesName = mesMatch[1];
-        // Mapear setiembre->septiembre por consistencia
-        if (mesName === 'setiembre') mesName = 'septiembre';
-
-        const monthIndex = [
+        const mesesBase = [
             'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
             'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-        ].indexOf(mesName);
+        ];
+        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const norm = normalize(nombreArchivo);
+
+        // Detectar mes por inclusión directa en el string normalizado
+        let mesName: string | null = null;
+        if (norm.includes('setiembre')) {
+            mesName = 'septiembre';
+        } else {
+            for (const m of mesesBase) {
+                if (norm.includes(m)) { mesName = m; break; }
+            }
+        }
+        if (!mesName) {
+            // Debug puntual: ayuda a saber por qué no se detecta
+            console.debug('[extraerPeriodoDeNombre] Mes no detectado en:', nombreArchivo);
+            return null;
+        }
+        const monthIndex = mesesBase.indexOf(mesName);
         if (monthIndex === -1) return null;
 
+        // Detectar año en todo el string (1900-2099)
+        const yearMatch = norm.match(/(19|20)\d{2}/);
+        if (!yearMatch) {
+            console.debug('[extraerPeriodoDeNombre] Año no detectado en:', nombreArchivo);
+            return null;
+        }
         const year = Number(yearMatch[0]);
-        const month = monthIndex + 1; // 1-12
-        return { year, month };
+        return { year, month: monthIndex + 1 };
     }
 
     private getFechaPeriodo(doc: Documento): Date | null {
@@ -181,6 +181,19 @@ export class ListBallotsUserComponent implements OnInit {
                     }
                 });
 
+                // Debug: muestra cómo se detectan los periodos de los primeros documentos
+                try {
+                    const debugDocs = this.documentos.slice(0, 20).map(d => ({
+                        id: d.id,
+                        nombre_archivo: d.nombre_archivo,
+                        subido_en: d.subido_en,
+                        periodo: this.extraerPeriodoDeNombre(d.nombre_archivo)
+                    }));
+                    console.table(debugDocs);
+                } catch (e) {
+                    console.log('[ListBallotsUser] Debug periodos error:', e);
+                }
+
                 // Orden descendente (últimos años primero)
                 this.years = Array.from(años).sort((a, b) => b - a);
 
@@ -206,6 +219,25 @@ export class ListBallotsUserComponent implements OnInit {
     }
 
     aplicarFiltros() {
+        console.log('[ListBallotsUser] aplicarFiltros()', {
+            estadoFiltro: this.estadoFiltro,
+            mesFiltro: this.mesFiltro,
+            selectedYear: this.selectedYear,
+            ordenarPor: this.ordenarPor,
+            totalDocs: this.documentos.length
+        });
+
+        // Debug: muestra algunos periodos calculados antes de filtrar
+        try {
+            const sample = this.documentos.slice(0, 20).map(d => ({
+                id: d.id,
+                nombre_archivo: d.nombre_archivo,
+                periodo: this.extraerPeriodoDeNombre(d.nombre_archivo),
+                subido_en: d.subido_en
+            }));
+            console.table(sample);
+        } catch {}
+
         let documentosFiltrados = this.documentos.filter((doc) => {
             // Filtrar por estado
             const cumpleEstado =
@@ -252,6 +284,7 @@ export class ListBallotsUserComponent implements OnInit {
         });
 
         this.documentosFiltrados = documentosFiltrados;
+        console.log('[ListBallotsUser] result', { mostrados: this.documentosFiltrados.length });
     }
 
     getSeverity(estado: string): 'success' | 'warning' | 'danger' | 'info' {
